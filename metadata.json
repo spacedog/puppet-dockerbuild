@@ -1,0 +1,17 @@
+{
+  "name": "abaranov-dockerbuild",
+  "version": "0.1.0",
+  "author": "abaranov",
+  "summary": null,
+  "license": "GPL",
+  "source": "",
+  "issues_url": null,
+  "project_page": null,
+  "dependencies": [
+    {
+      "version_range": ">= 1.0.0",
+      "name": "puppetlabs-stdlib"
+    }
+  ]
+}
+
