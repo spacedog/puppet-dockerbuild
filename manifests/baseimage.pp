@@ -24,7 +24,7 @@ service <%= scope.lookupvar('dockerbuild::params::sshd_service') -%> start
   }
 
   # baseimage.dockfile
-  file {"${dockerbuild::conf_d}/baseimage.dockfile":
+  file {"${dockerbuild::conf_d}/baseimage.dockerfile":
     ensure  => $dockerbuild::ensure,
     owner   => 'root',
     group   => 'root',
