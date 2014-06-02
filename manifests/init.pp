@@ -14,6 +14,19 @@
 #
 # Author Name <author@domain.com>
 #
-class dockerbuild {
-  class {'docker':}
+class dockerbuild (
+  $ensure = 'present',
+  $conf_d = '/etc/dockerbuild',
+)inherits dockerbuild::params {
+  $ensure_dir = $ensure ? {
+    'present' => 'directory',
+    default   => 'absent',
+  }
+
+  file {"${conf_d}":
+    ensure => $ensure_dir,
+    owner  => 'root',
+    group  => 'root',
+    mode   => '755',
+  }
 }
