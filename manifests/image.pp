@@ -1,5 +1,6 @@
 define dockerbuild::image(
-  $maintainer = undef,
+  $image_tag   = $title,
+  $maintainer = under,
   $start_cmd  = undef,
   $run        = [],
   $cmd        = [],
@@ -12,8 +13,13 @@ define dockerbuild::image(
   if is_array($expose) { validate_array($expose) }
   if is_hash($add)     { validate_hash($add) }
 
-  class { 'dockerbuild::baseimage':
-  }
+  validate_string($maintainer)
+  validate_string($image_tag)
+
+  # Base image
+  class { 'dockerbuild::baseimage': }
+
+  # Variables
   $dockerfile = "${dockerbuild::conf_d}/${title}.dockerfile"
   $baseimage_dockerfile = "${dockerbuild::conf_d}/baseimage.dockerfile"
 
@@ -21,6 +27,7 @@ define dockerbuild::image(
     owner  => 'root',
     group  => 'root',
     mode   => '0644',
+    notify => Exec["build_${title}"],
   }
 
   # Baseimage fragment
@@ -58,4 +65,9 @@ ADD <%= k -%> <%= a %>
     order   => '01',
   }
 
+  exec {"build_${title}":
+    path        => '/usr/bin',
+    command     => "docker build --rm=true -t $image_tag - < $dockerfile",
+    refreshonly => true,
+  }
 }
