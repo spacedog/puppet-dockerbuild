@@ -10,11 +10,15 @@ class dockerbuild::baseimage (
   validate_string($from)
   validate_string($maintainer)
 
+  File {
+    owner => 'root',
+    group => 'root',
+    mode  => '0644',
+  }
+
   # ADD start script
   file {"${dockerbuild::conf_d}/baseimage.start":
     ensure  => $dockerbuild::ensure,
-    owner   => 'root',
-    group   => 'root',
     mode    => '0755',
     content => inline_template("<% if @sshd_running -%>
 service <%= scope.lookupvar('dockerbuild::params::sshd_service') -%> start
@@ -26,9 +30,6 @@ service <%= scope.lookupvar('dockerbuild::params::sshd_service') -%> start
   # baseimage.dockfile
   file {"${dockerbuild::conf_d}/baseimage.dockerfile":
     ensure  => $dockerbuild::ensure,
-    owner   => 'root',
-    group   => 'root',
-    mode    => '0644',
     content => inline_template("#
 # VERSION 0.1
 #
