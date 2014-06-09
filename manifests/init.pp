@@ -17,13 +17,14 @@
 class dockerbuild (
   $ensure = 'present',
   $conf_d = '/etc/dockerbuild',
-)inherits dockerbuild::params {
+) inherits dockerbuild::params {
+
   $ensure_dir = $ensure ? {
     'present' => 'directory',
     default   => 'absent',
   }
 
-  file {"${conf_d}":
+  file {$conf_d:
     ensure => $ensure_dir,
     owner  => 'root',
     group  => 'root',
