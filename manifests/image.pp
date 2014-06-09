@@ -5,13 +5,15 @@ define dockerbuild::image(
   $run        = [],
   $cmd        = [],
   $expose     = [],
+  $volumes    = [],
   $add        = {},
 ){
 
-  if is_array($run)    { validate_array($run) }
-  if is_array($cmd)    { validate_array($cmd) }
-  if is_array($expose) { validate_array($expose) }
-  if is_hash($add)     { validate_hash($add) }
+  if is_array($run)     { validate_array($run) }
+  if is_array($cmd)     { validate_array($cmd) }
+  if is_array($expose)  { validate_array($expose) }
+  if is_array($volumes) { validate_array($volumes) }
+  if is_hash($add)      { validate_hash($add) }
 
   validate_string($maintainer)
   validate_string($image_tag)
@@ -44,6 +46,11 @@ define dockerbuild::image(
 <% if @run -%>
 <% @run.each do |r| -%>
 RUN <%= r %>
+<% end -%>
+<% end -%>
+<% if @volumes -%>
+<% @volumes.each do |v| -%>
+VOLUME <%= v %>
 <% end -%>
 <% end -%>
 <% if @cmd -%>
