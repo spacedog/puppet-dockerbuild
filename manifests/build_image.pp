@@ -1,4 +1,4 @@
-define dockerbuild::image(
+define dockerbuild::build_image(
   $image_tag  = 'latest',
   $from       = 'centos::centos6',
   $maintainer = undef,
