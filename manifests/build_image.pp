@@ -5,7 +5,7 @@ define dockerbuild::build_image(
   $image_tag  = 'latest',
   $from       = 'centos::centos6',
   $run        = [],
-  $cmd        = [],
+  $cmd        = ['/usr/bin/supervisord'],
   $expose     = [],
   $volume     = [],
   $add        = {},
@@ -47,10 +47,12 @@ define dockerbuild::build_image(
   }
 
   # MAINTAINER
-  concat::fragment {"${name}_Dockerfile_MAINTAINER":
-    target  => $dockerfile,
-    order   => '10',
-    content => "MAINTAINER ${maintainer}\n",
+  if !empty($maintainer) {
+    concat::fragment {"${name}_Dockerfile_MAINTAINER":
+      target  => $dockerfile,
+      order   => '10',
+      content => "MAINTAINER ${maintainer}\n",
+    }
   }
 
   # RUN
@@ -80,9 +82,8 @@ VOLUME <%= v %>
     concat::fragment {"${name}_Dockerfile_CMD":
       target  => $dockerfile,
       order   => '40',
-      content => inline_template('<% @cmd.each do |c| -%>
-CMD <%= c %>
-<% end -%>'),
+      content => inline_template('CMD [<% @cmd.each do |c| %>"<%= c -%>"<% end %>]
+'),
     }
   }
 
@@ -107,15 +108,6 @@ ADD <%= k -%> <%= a %>
 <% end -%>'),
     }
   }
-
-  if !empty($default_cmd)
-    concat::fragment {"${name}_Dockerfile_ADD":
-      target  => $dockerfile,
-      order   => '99',
-      content => "CMD $
-    }
-  }
-
 
   Concat[$dockerfile] ~>
   exec {"build_${name}":
