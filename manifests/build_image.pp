@@ -1,14 +1,14 @@
 define dockerbuild::build_image(
-  $image_tag  = 'latest',
-  $from       = 'centos::centos6',
   $maintainer = undef,
   $start_cmd  = undef,
+  $workdir    = undef,
+  $image_tag  = 'latest',
+  $from       = 'centos::centos6',
   $run        = [],
   $cmd        = [],
   $expose     = [],
   $volume     = [],
   $add        = {},
-  $workdir    = undef,
 ){
 
   if is_array($run)     { validate_array($run) }
@@ -17,8 +17,11 @@ define dockerbuild::build_image(
   if is_array($volumes) { validate_array($volumes) }
   if is_hash($add)      { validate_hash($add) }
 
-  validate_string($maintainer)
-  validate_string($image_tag)
+  validate_string(
+    $maintainer,
+    $image_tag,
+    $from,
+  )
 
   # Variables
   $dockerdir  = "${dockerbuild::conf_d}/${name}"
@@ -104,6 +107,15 @@ ADD <%= k -%> <%= a %>
 <% end -%>'),
     }
   }
+
+  if !empty($default_cmd)
+    concat::fragment {"${name}_Dockerfile_ADD":
+      target  => $dockerfile,
+      order   => '99',
+      content => "CMD $
+    }
+  }
+
 
   Concat[$dockerfile] ~>
   exec {"build_${name}":
