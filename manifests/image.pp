@@ -1,12 +1,14 @@
 define dockerbuild::image(
-  $image_tag   = $title,
-  $maintainer = under,
+  $image_tag  = 'latest',
+  $from       = 'centos::centos6',
+  $maintainer = undef,
   $start_cmd  = undef,
   $run        = [],
   $cmd        = [],
   $expose     = [],
-  $volumes    = [],
+  $volume     = [],
   $add        = {},
+  $workdir    = undef,
 ){
 
   if is_array($run)     { validate_array($run) }
@@ -18,63 +20,98 @@ define dockerbuild::image(
   validate_string($maintainer)
   validate_string($image_tag)
 
-  # Base image
-  class { 'dockerbuild::baseimage': }
-
   # Variables
-  $dockerfile = "${dockerbuild::conf_d}/${title}.dockerfile"
-  $baseimage_dockerfile = "${dockerbuild::conf_d}/baseimage.dockerfile"
+  $dockerdir  = "${dockerbuild::conf_d}/${name}"
+  $dockerfile = "${dockerdir}/Dockerfile"
 
+  file {$dockerdir:
+    ensure => 'directory',
+  }
+
+
+  # DockerFile
   concat {$dockerfile:
     owner  => 'root',
     group  => 'root',
     mode   => '0644',
-    notify => Exec["build_${title}"],
   }
 
-  # Baseimage fragment
-  concat::fragment {$baseimage_dockerfile:
-    target => $dockerfile,
-    content => file($baseimage_dockerfile),
-    order  => '00',
-  }
-
-  # Image custom staff
-  concat::fragment {"${title}_${dockerfile}":
+  # FROM
+  concat::fragment {"${name}_Dockerfile_FROM":
     target  => $dockerfile,
-    content => inline_template("
-<% if @run -%>
-<% @run.each do |r| -%>
-RUN <%= r %>
-<% end -%>
-<% end -%>
-<% if @volumes -%>
-<% @volumes.each do |v| -%>
-VOLUME <%= v %>
-<% end -%>
-<% end -%>
-<% if @cmd -%>
-<% @cmd.each do |c| -%>
-CMD <%= c %>
-<% end -%>
-<% end -%>
-<% if @expose -%>
-<% @expose.each do |e| -%>
-EXPOSE <%= e %>
-<% end -%>
-<% end -%>
-<% if @add -%>
-<% @add.each do |k,a| -%>
-ADD <%= k -%> <%= a %>
-<% end -%>
-<% end -%>
-"),
     order   => '01',
+    content => "FROM ${from}\n",
   }
 
-  exec {"build_${title}":
+  # MAINTAINER
+  concat::fragment {"${name}_Dockerfile_MAINTAINER":
+    target  => $dockerfile,
+    order   => '10',
+    content => "MAINTAINER ${maintainer}\n",
+  }
+
+  # RUN
+  if !empty($run) {
+    concat::fragment {"${name}_Dockerfile_RUN":
+      target  => $dockerfile,
+      order   => '20',
+      content => inline_template('<% @run.each do |r| -%>
+RUN <%= r %>
+<% end -%>'),
+     }
+  }
+
+  # VOLUMES
+  if !empty($volume) {
+    concat::fragment {"${name}_Dockerfile_VOLUME":
+      target  => $dockerfile,
+      order   => '30',
+      content => inline_template('<% @volume.each do |v| -%>
+VOLUME <%= v %>
+<% end -%>'),
+    }
+  }
+
+  # CMD
+  if !empty($cmd) {
+    concat::fragment {"${name}_Dockerfile_CMD":
+      target  => $dockerfile,
+      order   => '40',
+      content => inline_template('<% @cmd.each do |c| -%>
+CMD <%= c %>
+<% end -%>'),
+    }
+  }
+
+  # EXPOSE
+  if !empty($expose) {
+  concat::fragment {"${name}_Dockerfile_EXPOSE":
+      target  => $dockerfile,
+      order   => '50',
+      content => inline_template('<% @expose.each do |e| -%>
+EXPOSE <%= e %>
+<% end -%>'),
+    }
+  }
+
+  # ADD
+  if !empty($add) {
+    concat::fragment {"${name}_Dockerfile_ADD":
+      target  => $dockerfile,
+      order   => '60',
+      content => inline_template('<% @add.each do |k,a| -%>
+ADD <%= k -%> <%= a %>
+<% end -%>'),
+    }
+  }
+
+  Concat[$dockerfile] ~>
+  exec {"build_${name}":
     path        => '/usr/bin',
-    command     => "docker build --rm=true -t $image_tag - < $dockerfile",
+    command     => "docker build --rm=true -t $name:$image_tag . ",
+    cwd         => $dockerdir,
+    logoutput   => true,
+    timeout     => 3600,
     refreshonly => true,
   }
 }
