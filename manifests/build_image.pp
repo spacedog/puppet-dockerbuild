@@ -1,14 +1,15 @@
 define dockerbuild::build_image(
-  $maintainer = undef,
-  $start_cmd  = undef,
-  $workdir    = undef,
-  $image_tag  = 'latest',
-  $from       = 'centos::centos6',
-  $run        = [],
-  $cmd        = ['/usr/bin/supervisord'],
-  $expose     = [],
-  $volume     = [],
-  $add        = {},
+  $maintainer     = undef,
+  $start_cmd      = undef,
+  $workdir        = undef,
+  $image_tag      = 'latest',
+  $from           = 'centos::centos6',
+  $run            = [],
+  $cmd            = ['/usr/bin/supervisord'],
+  $expose         = [],
+  $volume         = [],
+  $add            = {},
+  $do_puppet      = true,
 ){
 
   if is_array($run)     { validate_array($run) }
@@ -107,6 +108,9 @@ EXPOSE <%= e %>
 ADD <%= k -%> <%= a %>
 <% end -%>'),
     }
+  }
+  if $do_puppet {
+    #TODO: find a better way to run puppet during docker build
   }
 
   Concat[$dockerfile] ~>
